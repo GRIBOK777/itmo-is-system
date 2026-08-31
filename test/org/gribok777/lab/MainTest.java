@@ -1,4 +1,4 @@
-package test.org.gribok777.lab;
+package org.gribok777.lab;
 
 public final class MainTest {
     public static void main(String[] args) {
