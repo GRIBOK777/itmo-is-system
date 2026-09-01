@@ -30,7 +30,7 @@ public final class LoggerTest {
 
         check(!output.contains("debug-hidden"), "default level must hide DEBUG");
         check(
-                output.contains("[INFO ]") && output.contains("info-visible"),
+                output.contains("[INFO]") && output.contains("info-visible"),
                 "default level must write INFO");
         check(
                 output.contains("[ERROR]") && output.contains("error-visible"),

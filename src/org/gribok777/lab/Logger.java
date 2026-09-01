@@ -221,7 +221,7 @@ public final class Logger {
 
     public enum LogLevel {
         DEBUG(0, "DEBUG"),
-        INFO(1, "INFO "),
+        INFO(1, "INFO"),
         ERROR(2, "ERROR");
 
         final int priority;
