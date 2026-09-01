@@ -1,4 +1,4 @@
-package org.gribok777j.lab;
+package org.gribok777.lab;
 
 
 public final class Server implements AutoCloseable {

@@ -1,4 +1,4 @@
-package org.gribok777j.lab;
+package org.gribok777.lab;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -122,7 +122,7 @@ public final class PostgresConnector implements AutoCloseable {
         }
 
         private static LibPQ load() {
-            String library = System.getProperty("org.gribok777j.lab.sql.libpq", "libpq.so.5");
+            String library = System.getProperty("org.gribok777.lab.sql.libpq", "libpq.so.5");
             return new LibPQ(SymbolLookup.libraryLookup(library, Arena.global()));
         }
 

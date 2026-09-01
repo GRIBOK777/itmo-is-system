@@ -28,8 +28,8 @@ endif
 FILES_SRC = $(shell find $(SRC_DIR) -name "*.java")
 FILES_TEST = $(shell find $(TEST_DIR) -name "*.java")
 
-MAINCLASS_SRC = org.gribok777j.lab.Main
-MAINCLASS_TEST = org.gribok777j.lab.MainTest
+MAINCLASS_SRC = org.gribok777.lab.Main
+MAINCLASS_TEST = org.gribok777.lab.MainTest
 
 
 all: build

@@ -1,4 +1,4 @@
-package org.gribok777j.lab;
+package org.gribok777.lab;
 
 import java.time.Duration;
 import java.util.ArrayList;
