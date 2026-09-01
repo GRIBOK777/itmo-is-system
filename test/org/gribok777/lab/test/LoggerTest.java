@@ -1,5 +1,6 @@
-package org.gribok777.lab;
+package org.gribok777.lab.test;
 
+import org.gribok777.lab.logger.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;

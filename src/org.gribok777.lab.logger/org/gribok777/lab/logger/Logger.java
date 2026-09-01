@@ -1,4 +1,4 @@
-package org.gribok777.lab;
+package org.gribok777.lab.logger;
 
 import java.io.IOException;
 import java.io.OutputStream;

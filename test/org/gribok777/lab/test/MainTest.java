@@ -1,4 +1,4 @@
-package org.gribok777.lab;
+package org.gribok777.lab.test;
 
 public final class MainTest {
     public static void main(String[] args) {
@@ -7,7 +7,7 @@ public final class MainTest {
     }
 
     public static void run() {
-        org.gribok777.lab.LoggerTest.run();
+        LoggerTest.run();
         System.out.println("[OK] " + MainTest.class.getSimpleName() + " passed all tests.");
     }
 }

@@ -1,4 +1,4 @@
-package org.gribok777.lab;
+package org.gribok777.lab.server;
 
 import java.util.Map;
 import java.util.Objects;

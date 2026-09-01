@@ -1,4 +1,4 @@
-package org.gribok777.lab;
+package org.gribok777.lab.database;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -32,7 +32,6 @@ public final class PostgresDatabase {
 
         Arena connectionArena = Arena.ofShared();
         try {
-            Logger.debug("Opening PostgreSQL connection");
             LibPQ libpq = LibPQ.instance();
             MemorySegment conninfo = connectionArena.allocateFrom(
                 connectionInfo(url, username, password), StandardCharsets.UTF_8);
@@ -48,10 +47,8 @@ public final class PostgresDatabase {
             }
             arena = connectionArena;
             connection = newConnection;
-            Logger.info("PostgreSQL connection established");
         } catch (Throwable exception) {
             connectionArena.close();
-            Logger.error("PostgreSQL connection failed: " + exception.getMessage());
             if (exception instanceof RuntimeException runtime) {
                 throw runtime;
             }
@@ -65,9 +62,7 @@ public final class PostgresDatabase {
         }
         try {
             LibPQ.instance().finish.invokeExact(connection);
-            Logger.info("PostgreSQL connection closed");
         } catch (Throwable exception) {
-            Logger.error("PostgreSQL disconnect failed: " + exception.getMessage());
             throw new IllegalStateException("PostgreSQL disconnect failed", exception);
         } finally {
             connection = null;
