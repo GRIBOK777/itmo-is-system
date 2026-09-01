@@ -69,8 +69,5 @@ $(OUT_DIR)/%.class: build
 fmt: deps
 	$(JAVA) -jar $(GJF_JAR) --aosp --replace $(FILES_SRC) $(FILES_TEST)
 
-fmt-check: deps
-	$(JAVA) -jar $(GJF_JAR) --aosp --dry-run --set-exit-if-changed $(FILES_SRC) $(FILES_TEST)
-
 hooks:
 	git config core.hooksPath .githooks

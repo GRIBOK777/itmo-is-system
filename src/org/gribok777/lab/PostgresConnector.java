@@ -6,18 +6,12 @@ import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class PostgresConnector implements AutoCloseable {
     private static final int CONNECTION_OK = 0;
-    private static final Linker LINKER = Linker.nativeLinker();
-    private static final FunctionDescriptor POINTER_TO_POINTER =
-            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS);
-    private static final FunctionDescriptor STATUS_DESCRIPTOR =
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS);
-    private static final FunctionDescriptor FINISH_DESCRIPTOR =
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS);
 
     private volatile MemorySegment connection;
 
@@ -29,23 +23,26 @@ public final class PostgresConnector implements AutoCloseable {
             throw new IllegalStateException("database is already connected");
         }
 
+        MemorySegment opened = MemorySegment.NULL;
         try (Arena connectionArena = Arena.ofConfined()) {
-            LibPQ libpq = LibPQ.instance();
             MemorySegment conninfo =
                     connectionArena.allocateFrom(
                             connectionInfo(url, username, password), StandardCharsets.UTF_8);
-            MemorySegment newConnection = (MemorySegment) libpq.connect.invokeExact(conninfo);
-            if (newConnection.equals(MemorySegment.NULL)) {
+            opened = (MemorySegment) LibPQ.CONNECT.invokeExact(conninfo);
+            if (opened.equals(MemorySegment.NULL)) {
                 throw new IllegalStateException("PQconnectdb returned null");
             }
-            int status = (int) libpq.status.invokeExact(newConnection);
+            int status = (int) LibPQ.STATUS.invokeExact(opened);
             if (status != CONNECTION_OK) {
-                String error = errorMessage(libpq, newConnection);
-                libpq.finish.invokeExact(newConnection);
-                throw new IllegalStateException("PostgreSQL connection failed: " + error);
+                throw new IllegalStateException(
+                        "PostgreSQL connection failed: " + errorMessage(opened));
             }
-            connection = newConnection;
+            connection = opened;
+            opened = MemorySegment.NULL;
         } catch (Throwable exception) {
+            if (!opened.equals(MemorySegment.NULL)) {
+                finishAfterFailure(opened, exception);
+            }
             if (exception instanceof RuntimeException runtime) {
                 throw runtime;
             }
@@ -58,7 +55,7 @@ public final class PostgresConnector implements AutoCloseable {
             return;
         }
         try {
-            LibPQ.instance().finish.invokeExact(connection);
+            LibPQ.FINISH.invokeExact(connection);
         } catch (Throwable exception) {
             throw new IllegalStateException("PostgreSQL disconnect failed", exception);
         } finally {
@@ -75,9 +72,9 @@ public final class PostgresConnector implements AutoCloseable {
         return connection != null;
     }
 
-    private static String errorMessage(LibPQ libpq, MemorySegment connection) {
+    private static String errorMessage(MemorySegment connection) {
         try {
-            MemorySegment message = (MemorySegment) libpq.errorMessage.invokeExact(connection);
+            MemorySegment message = (MemorySegment) LibPQ.ERROR_MESSAGE.invokeExact(connection);
             return message.equals(MemorySegment.NULL)
                     ? "unknown error"
                     : message.reinterpret(Long.MAX_VALUE).getString(0);
@@ -86,51 +83,65 @@ public final class PostgresConnector implements AutoCloseable {
         }
     }
 
-    private static String connectionInfo(String url, String username, String password) {
-        String host = url.contains("=") ? url : "host=" + quote(url);
-        return host + " user=" + quote(username) + " password=" + quote(password);
+    private static void finishAfterFailure(MemorySegment connection, Throwable failure) {
+        try {
+            LibPQ.FINISH.invokeExact(connection);
+        } catch (Throwable closeFailure) {
+            failure.addSuppressed(closeFailure);
+        }
     }
 
-    private static String quote(String value) {
-        var quoted = new StringBuilder(value.length() + 2).append('\'');
+    private static String connectionInfo(String url, String username, String password) {
+        var result = new StringBuilder(url.length() + username.length() + password.length() + 32);
+        if (url.contains("=")) {
+            result.append(url);
+        } else {
+            result.append("host=");
+            appendQuoted(result, url);
+        }
+        result.append(" user=");
+        appendQuoted(result, username);
+        result.append(" password=");
+        appendQuoted(result, password);
+        return result.toString();
+    }
+
+    private static void appendQuoted(StringBuilder output, String value) {
+        output.append('\'');
         for (int index = 0; index < value.length(); index++) {
             char character = value.charAt(index);
             if (character == '\\' || character == '\'') {
-                quoted.append('\\');
+                output.append('\\');
             }
-            quoted.append(character);
+            output.append(character);
         }
-        return quoted.append('\'').toString();
+        output.append('\'');
     }
 
     private static final class LibPQ {
-        private static final LibPQ INSTANCE = load();
+        private static final Linker LINKER = Linker.nativeLinker();
+        private static final SymbolLookup SYMBOLS =
+                SymbolLookup.libraryLookup(
+                        System.getProperty("org.gribok777.lab.sql.libpq", "libpq.so.5"),
+                        Arena.global());
+        private static final MethodHandle CONNECT =
+                downcall(
+                        "PQconnectdb",
+                        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+        private static final MethodHandle STATUS =
+                downcall(
+                        "PQstatus",
+                        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+        private static final MethodHandle ERROR_MESSAGE =
+                downcall(
+                        "PQerrorMessage",
+                        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+        private static final MethodHandle FINISH =
+                downcall("PQfinish", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-        private final java.lang.invoke.MethodHandle connect;
-        private final java.lang.invoke.MethodHandle status;
-        private final java.lang.invoke.MethodHandle errorMessage;
-        private final java.lang.invoke.MethodHandle finish;
-
-        private LibPQ(SymbolLookup symbols) {
-            connect = downcall(symbols, "PQconnectdb", POINTER_TO_POINTER);
-            status = downcall(symbols, "PQstatus", STATUS_DESCRIPTOR);
-            errorMessage = downcall(symbols, "PQerrorMessage", POINTER_TO_POINTER);
-            finish = downcall(symbols, "PQfinish", FINISH_DESCRIPTOR);
-        }
-
-        private static LibPQ instance() {
-            return INSTANCE;
-        }
-
-        private static LibPQ load() {
-            String library = System.getProperty("org.gribok777.lab.sql.libpq", "libpq.so.5");
-            return new LibPQ(SymbolLookup.libraryLookup(library, Arena.global()));
-        }
-
-        private static java.lang.invoke.MethodHandle downcall(
-                SymbolLookup symbols, String name, FunctionDescriptor descriptor) {
+        private static MethodHandle downcall(String name, FunctionDescriptor descriptor) {
             MemorySegment symbol =
-                    symbols.find(name)
+                    SYMBOLS.find(name)
                             .orElseThrow(
                                     () ->
                                             new IllegalStateException(
