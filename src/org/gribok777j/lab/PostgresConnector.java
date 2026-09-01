@@ -1,4 +1,4 @@
-package org.GRIBOK777j.lab.database;
+package org.gribok777j.lab;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -9,7 +9,7 @@ import java.lang.foreign.ValueLayout;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public final class PostgresDatabase {
+public final class PostgresConnector implements AutoCloseable {
     private static final int CONNECTION_OK = 0;
     private static final Linker LINKER = Linker.nativeLinker();
     private static final FunctionDescriptor POINTER_TO_POINTER =
@@ -19,7 +19,6 @@ public final class PostgresDatabase {
     private static final FunctionDescriptor FINISH_DESCRIPTOR =
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS);
 
-    private Arena arena;
     private volatile MemorySegment connection;
 
     public synchronized void connect(String url, String username, String password) {
@@ -30,8 +29,7 @@ public final class PostgresDatabase {
             throw new IllegalStateException("database is already connected");
         }
 
-        Arena connectionArena = Arena.ofShared();
-        try {
+        try (Arena connectionArena = Arena.ofConfined()) {
             LibPQ libpq = LibPQ.instance();
             MemorySegment conninfo = connectionArena.allocateFrom(
                 connectionInfo(url, username, password), StandardCharsets.UTF_8);
@@ -45,10 +43,8 @@ public final class PostgresDatabase {
                 libpq.finish.invokeExact(newConnection);
                 throw new IllegalStateException("PostgreSQL connection failed: " + error);
             }
-            arena = connectionArena;
             connection = newConnection;
         } catch (Throwable exception) {
-            connectionArena.close();
             if (exception instanceof RuntimeException runtime) {
                 throw runtime;
             }
@@ -66,9 +62,12 @@ public final class PostgresDatabase {
             throw new IllegalStateException("PostgreSQL disconnect failed", exception);
         } finally {
             connection = null;
-            arena.close();
-            arena = null;
         }
+    }
+
+    @Override
+    public void close() {
+        disconnect();
     }
 
     public boolean isConnected() {
@@ -81,7 +80,7 @@ public final class PostgresDatabase {
             return message.equals(MemorySegment.NULL)
                 ? "unknown error"
                 : message.reinterpret(4_096).getString(0);
-        } catch (Throwable exception) {
+        } catch (Throwable _) {
             return "unknown error (could not read native error message)";
         }
     }
@@ -123,7 +122,7 @@ public final class PostgresDatabase {
         }
 
         private static LibPQ load() {
-            String library = System.getProperty("org.GRIBOK777j.lab.sql.libpq", "libpq.so.5");
+            String library = System.getProperty("org.gribok777j.lab.sql.libpq", "libpq.so.5");
             return new LibPQ(SymbolLookup.libraryLookup(library, Arena.global()));
         }
 

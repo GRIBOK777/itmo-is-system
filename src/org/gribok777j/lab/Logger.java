@@ -1,4 +1,4 @@
-package org.GRIBOK777j.lab.logger;
+package org.gribok777j.lab;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -109,7 +109,7 @@ public final class Logger {
             if (READY_EVENTS.isEmpty()) {
                 event.output.flush();
             }
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // Logging must not terminate application threads when output fails.
         }
     }
@@ -124,24 +124,29 @@ public final class Logger {
             } else if (Character.isSurrogate((char) codePoint)) {
                 codePoint = 0xfffd;
             }
-            if (codePoint <= 0x7f) {
-                if (buffered == OUTPUT_BUFFER.length) {
-                    output.write(OUTPUT_BUFFER);
-                    buffered = 0;
+            switch (codePoint) {
+                case int value when value <= 0x7f -> {
+                    if (buffered == OUTPUT_BUFFER.length) {
+                        output.write(OUTPUT_BUFFER);
+                        buffered = 0;
+                    }
+                    OUTPUT_BUFFER[buffered++] = (byte) value;
                 }
-                OUTPUT_BUFFER[buffered++] = (byte) codePoint;
-            } else if (codePoint <= 0x7ff) {
-                buffered = appendByte(output, buffered, (byte) (0xc0 | (codePoint >> 6)));
-                buffered = appendByte(output, buffered, (byte) (0x80 | (codePoint & 0x3f)));
-            } else if (codePoint <= 0xffff) {
-                buffered = appendByte(output, buffered, (byte) (0xe0 | (codePoint >> 12)));
-                buffered = appendByte(output, buffered, (byte) (0x80 | ((codePoint >> 6) & 0x3f)));
-                buffered = appendByte(output, buffered, (byte) (0x80 | (codePoint & 0x3f)));
-            } else {
-                buffered = appendByte(output, buffered, (byte) (0xf0 | (codePoint >> 18)));
-                buffered = appendByte(output, buffered, (byte) (0x80 | ((codePoint >> 12) & 0x3f)));
-                buffered = appendByte(output, buffered, (byte) (0x80 | ((codePoint >> 6) & 0x3f)));
-                buffered = appendByte(output, buffered, (byte) (0x80 | (codePoint & 0x3f)));
+                case int value when value <= 0x7ff -> {
+                    buffered = appendByte(output, buffered, (byte) (0xc0 | (value >> 6)));
+                    buffered = appendByte(output, buffered, (byte) (0x80 | (value & 0x3f)));
+                }
+                case int value when value <= 0xffff -> {
+                    buffered = appendByte(output, buffered, (byte) (0xe0 | (value >> 12)));
+                    buffered = appendByte(output, buffered, (byte) (0x80 | ((value >> 6) & 0x3f)));
+                    buffered = appendByte(output, buffered, (byte) (0x80 | (value & 0x3f)));
+                }
+                case int value -> {
+                    buffered = appendByte(output, buffered, (byte) (0xf0 | (value >> 18)));
+                    buffered = appendByte(output, buffered, (byte) (0x80 | ((value >> 12) & 0x3f)));
+                    buffered = appendByte(output, buffered, (byte) (0x80 | ((value >> 6) & 0x3f)));
+                    buffered = appendByte(output, buffered, (byte) (0x80 | (value & 0x3f)));
+                }
             }
         }
         if (buffered > 0) {

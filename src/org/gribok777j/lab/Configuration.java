@@ -1,8 +1,7 @@
-package org.GRIBOK777j.lab.server;
+package org.gribok777j.lab;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 public record Configuration(String databaseUrl, String databaseUsername, String databasePassword) {
     public static final ScopedValue<Configuration> CONTEXT = ScopedValue.newInstance();
@@ -67,17 +66,6 @@ public record Configuration(String databaseUrl, String databaseUsername, String 
         ScopedValue.where(CONTEXT, configuration).run(task);
     }
 
-    public static <T> T withContext(Configuration configuration, Supplier<T> task) {
-        Objects.requireNonNull(configuration, "configuration");
-        Objects.requireNonNull(task, "task");
-        try {
-            return ScopedValue.where(CONTEXT, configuration).call(task::get);
-        } catch (Exception exception) {
-            throw (exception instanceof RuntimeException runtime)
-                ? runtime : new RuntimeException(exception);
-        }
-    }
-
     public static Configuration current() {
         return CONTEXT.orElseThrow(() -> new IllegalStateException("configuration context is not bound"));
     }
@@ -91,11 +79,11 @@ public record Configuration(String databaseUrl, String databaseUsername, String 
 
     private static int port(String value) {
         try {
-            int port = Integer.parseInt(value);
-            if (port < 1 || port > 65_535) {
-                throw new IllegalArgumentException("POSTGRES_PORT must be between 1 and 65535");
-            }
-            return port;
+            return switch (Integer.parseInt(value)) {
+                case int port when port >= 1 && port <= 65_535 -> port;
+                case int _ -> throw new IllegalArgumentException(
+                    "POSTGRES_PORT must be between 1 and 65535");
+            };
         } catch (NumberFormatException _) {
             throw new IllegalArgumentException("POSTGRES_PORT must be a number");
         }
