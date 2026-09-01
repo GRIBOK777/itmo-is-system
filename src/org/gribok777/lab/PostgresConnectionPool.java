@@ -72,5 +72,4 @@ public final class PostgresConnectionPool implements AutoCloseable {
             database.close();
         }
     }
-
 }

@@ -54,10 +54,7 @@ public record Configuration(String databaseUrl, String databaseUsername, String 
             appendQuoted(connectionInfo, database);
             url = connectionInfo.toString();
         }
-        return new Configuration(
-            url,
-            username,
-            password);
+        return new Configuration(url, username, password);
     }
 
     public static void withContext(Configuration configuration, Runnable task) {
@@ -67,22 +64,26 @@ public record Configuration(String databaseUrl, String databaseUsername, String 
     }
 
     public static Configuration current() {
-        return CONTEXT.orElseThrow(() -> new IllegalStateException("configuration context is not bound"));
+        return CONTEXT.orElseThrow(
+                () -> new IllegalStateException("configuration context is not bound"));
     }
 
     @Override
     public String toString() {
-        return "Configuration[databaseUrl=" + databaseUrl
-            + ", databaseUsername=" + databaseUsername
-            + ", databasePassword=<redacted>]";
+        return "Configuration[databaseUrl="
+                + databaseUrl
+                + ", databaseUsername="
+                + databaseUsername
+                + ", databasePassword=<redacted>]";
     }
 
     private static int port(String value) {
         try {
             return switch (Integer.parseInt(value)) {
                 case int port when port >= 1 && port <= 65_535 -> port;
-                case int _ -> throw new IllegalArgumentException(
-                    "POSTGRES_PORT must be between 1 and 65535");
+                case int _ ->
+                        throw new IllegalArgumentException(
+                                "POSTGRES_PORT must be between 1 and 65535");
             };
         } catch (NumberFormatException _) {
             throw new IllegalArgumentException("POSTGRES_PORT must be a number");

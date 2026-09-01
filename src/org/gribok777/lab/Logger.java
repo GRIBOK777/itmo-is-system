@@ -13,8 +13,10 @@ public final class Logger {
     private static final LogLevel DEFAULT_LEVEL = LogLevel.INFO;
 
     private static final int QUEUE_CAPACITY = 1024;
-    private static final BlockingQueue<LogEvent> FREE_EVENTS = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
-    private static final BlockingQueue<LogEvent> READY_EVENTS = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+    private static final BlockingQueue<LogEvent> FREE_EVENTS =
+            new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+    private static final BlockingQueue<LogEvent> READY_EVENTS =
+            new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 
     private static final StringBuilder LINE_BUFFER = new StringBuilder(128);
     private static final byte[] OUTPUT_BUFFER = new byte[8192];
@@ -96,14 +98,18 @@ public final class Logger {
     private static void write(LogEvent event) {
         LINE_BUFFER.setLength(0);
         long seconds = Math.floorMod(event.timestamp, MILLIS_PER_DAY) / MILLIS_PER_SECOND;
-        LINE_BUFFER.append('[').append(event.level).append("] [");
+        LINE_BUFFER.append('[').append(event.level.formattedName).append("] [");
         appendTwoDigits(LINE_BUFFER, seconds / SECONDS_PER_HOUR);
         LINE_BUFFER.append(':');
         appendTwoDigits(LINE_BUFFER, (seconds / SECONDS_PER_MINUTE) % SECONDS_PER_MINUTE);
         LINE_BUFFER.append(':');
         appendTwoDigits(LINE_BUFFER, seconds % SECONDS_PER_MINUTE);
-        LINE_BUFFER.append("] ").append(event.virtual ? "(v)" : "(p)").append(' ')
-            .append(event.message).append('\n');
+        LINE_BUFFER
+                .append("] ")
+                .append(event.virtual ? "(v)" : "(p)")
+                .append(' ')
+                .append(event.message)
+                .append('\n');
         try {
             writeUtf8(event.output, LINE_BUFFER);
             if (READY_EVENTS.isEmpty()) {
@@ -118,8 +124,9 @@ public final class Logger {
         int buffered = 0;
         for (int index = 0; index < text.length(); index++) {
             int codePoint = text.charAt(index);
-            if (Character.isHighSurrogate((char) codePoint) && index + 1 < text.length()
-                && Character.isLowSurrogate(text.charAt(index + 1))) {
+            if (Character.isHighSurrogate((char) codePoint)
+                    && index + 1 < text.length()
+                    && Character.isLowSurrogate(text.charAt(index + 1))) {
                 codePoint = Character.toCodePoint((char) codePoint, text.charAt(++index));
             } else if (Character.isSurrogate((char) codePoint)) {
                 codePoint = 0xfffd;
@@ -154,7 +161,8 @@ public final class Logger {
         }
     }
 
-    private static int appendByte(OutputStream output, int buffered, byte value) throws IOException {
+    private static int appendByte(OutputStream output, int buffered, byte value)
+            throws IOException {
         if (buffered == OUTPUT_BUFFER.length) {
             output.write(OUTPUT_BUFFER);
             buffered = 0;
@@ -199,13 +207,29 @@ public final class Logger {
         }
     }
 
-    public static void info(String message) { log(LogLevel.INFO, message); }
-    public static void debug(String message) { log(LogLevel.DEBUG, message); }
-    public static void error(String message) { log(LogLevel.ERROR, message); }
+    public static void info(String message) {
+        log(LogLevel.INFO, message);
+    }
+
+    public static void debug(String message) {
+        log(LogLevel.DEBUG, message);
+    }
+
+    public static void error(String message) {
+        log(LogLevel.ERROR, message);
+    }
 
     public enum LogLevel {
-        DEBUG(0), INFO(1), ERROR(2);
+        DEBUG(0, "DEBUG"),
+        INFO(1, "INFO "),
+        ERROR(2, "ERROR");
+
         final int priority;
-        LogLevel(int priority) { this.priority = priority; }
+        final String formattedName;
+
+        LogLevel(int priority, String formattedName) {
+            this.priority = priority;
+            this.formattedName = formattedName;
+        }
     }
 }

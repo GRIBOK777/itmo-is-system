@@ -1,8 +1,7 @@
 package org.gribok777.lab;
 
 public final class MainTest {
-    private MainTest() {
-    }
+    private MainTest() {}
 
     public static void main(String[] args) {
         LoggerTest.run();

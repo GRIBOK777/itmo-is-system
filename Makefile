@@ -1,4 +1,4 @@
-.PHONY: all clean test run
+.PHONY: all clean test run fmt fmt-check hooks
 
 BIN_DIR = bin
 SRC_DIR = src
@@ -12,7 +12,7 @@ JAVA        = java
 JAVAC       = javac
 JAVAP       = javap
 
-JAVACFLAGS = -d $(OUT_DIR) -cp "$(CLASSPATH):$(OUT_DIR)" --source-path $(SRC_DIR) --release 25 --enable-preview
+JAVACFLAGS = -d $(OUT_DIR) -cp "$(CLASSPATH):$(OUT_DIR)" --source-path $(SRC_DIR) --release 25 --enable-preview -Xlint:preview
 JVMFLAGS = -XX:+UseSerialGC -Xmx1500m -Xms1500m
 JAVAFLAGS_SRC = -cp "$(CLASSPATH):$(OUT_DIR)" --enable-preview $(JVMFLAGS) --enable-native-access=ALL-UNNAMED
 JAVAFLAGS_TEST = -cp "$(CLASSPATH):$(OUT_DIR)" -ea --enable-preview --enable-native-access=ALL-UNNAMED
@@ -27,6 +27,7 @@ endif
 
 FILES_SRC = $(shell find $(SRC_DIR) -name "*.java")
 FILES_TEST = $(shell find $(TEST_DIR) -name "*.java")
+GJF_JAR = $(shell find $(LIB_DIR) -name "google-java-format-*-all-deps.jar" -print -quit)
 
 MAINCLASS_SRC = org.gribok777.lab.Main
 MAINCLASS_TEST = org.gribok777.lab.MainTest
@@ -64,3 +65,12 @@ $(DEPS_SENTINEL): scripts/deps.bash
 
 $(OUT_DIR)/%.class: build
 	$(JAVAP) $(JAVAPFLAGS) -cp "$(CLASSPATH)" $@
+
+fmt: deps
+	$(JAVA) -jar $(GJF_JAR) --aosp --replace $(FILES_SRC) $(FILES_TEST)
+
+fmt-check: deps
+	$(JAVA) -jar $(GJF_JAR) --aosp --dry-run --set-exit-if-changed $(FILES_SRC) $(FILES_TEST)
+
+hooks:
+	git config core.hooksPath .githooks

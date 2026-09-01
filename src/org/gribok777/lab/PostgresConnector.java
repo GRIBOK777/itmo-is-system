@@ -13,11 +13,11 @@ public final class PostgresConnector implements AutoCloseable {
     private static final int CONNECTION_OK = 0;
     private static final Linker LINKER = Linker.nativeLinker();
     private static final FunctionDescriptor POINTER_TO_POINTER =
-        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS);
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS);
     private static final FunctionDescriptor STATUS_DESCRIPTOR =
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS);
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS);
     private static final FunctionDescriptor FINISH_DESCRIPTOR =
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS);
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS);
 
     private volatile MemorySegment connection;
 
@@ -31,8 +31,9 @@ public final class PostgresConnector implements AutoCloseable {
 
         try (Arena connectionArena = Arena.ofConfined()) {
             LibPQ libpq = LibPQ.instance();
-            MemorySegment conninfo = connectionArena.allocateFrom(
-                connectionInfo(url, username, password), StandardCharsets.UTF_8);
+            MemorySegment conninfo =
+                    connectionArena.allocateFrom(
+                            connectionInfo(url, username, password), StandardCharsets.UTF_8);
             MemorySegment newConnection = (MemorySegment) libpq.connect.invokeExact(conninfo);
             if (newConnection.equals(MemorySegment.NULL)) {
                 throw new IllegalStateException("PQconnectdb returned null");
@@ -78,8 +79,8 @@ public final class PostgresConnector implements AutoCloseable {
         try {
             MemorySegment message = (MemorySegment) libpq.errorMessage.invokeExact(connection);
             return message.equals(MemorySegment.NULL)
-                ? "unknown error"
-                : message.reinterpret(4_096).getString(0);
+                    ? "unknown error"
+                    : message.reinterpret(Long.MAX_VALUE).getString(0);
         } catch (Throwable _) {
             return "unknown error (could not read native error message)";
         }
@@ -127,9 +128,13 @@ public final class PostgresConnector implements AutoCloseable {
         }
 
         private static java.lang.invoke.MethodHandle downcall(
-            SymbolLookup symbols, String name, FunctionDescriptor descriptor) {
-            MemorySegment symbol = symbols.find(name)
-                .orElseThrow(() -> new IllegalStateException("libpq symbol not found: " + name));
+                SymbolLookup symbols, String name, FunctionDescriptor descriptor) {
+            MemorySegment symbol =
+                    symbols.find(name)
+                            .orElseThrow(
+                                    () ->
+                                            new IllegalStateException(
+                                                    "libpq symbol not found: " + name));
             return LINKER.downcallHandle(symbol, descriptor);
         }
     }

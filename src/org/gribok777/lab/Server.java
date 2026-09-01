@@ -1,6 +1,5 @@
 package org.gribok777.lab;
 
-
 public final class Server implements AutoCloseable {
     private PostgresConnectionPool connections;
 
@@ -9,11 +8,12 @@ public final class Server implements AutoCloseable {
             throw new IllegalStateException("server is already running");
         }
         var configuration = Configuration.current();
-        connections = new PostgresConnectionPool(
-            configuration.databaseUrl(),
-            configuration.databaseUsername(),
-            configuration.databasePassword(),
-            4);
+        connections =
+                new PostgresConnectionPool(
+                        configuration.databaseUrl(),
+                        configuration.databaseUsername(),
+                        configuration.databasePassword(),
+                        4);
         Logger.info("PostgreSQL connection established");
     }
 
