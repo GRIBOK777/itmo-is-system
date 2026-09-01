@@ -72,6 +72,17 @@ public final class PostgresConnector implements AutoCloseable {
         return connection != null;
     }
 
+    public synchronized boolean isHealthy() {
+        if (connection == null) {
+            return false;
+        }
+        try {
+            return (int) LibPQ.STATUS.invokeExact(connection) == CONNECTION_OK;
+        } catch (Throwable _) {
+            return false;
+        }
+    }
+
     private static String errorMessage(MemorySegment connection) {
         try {
             MemorySegment message = (MemorySegment) LibPQ.ERROR_MESSAGE.invokeExact(connection);
