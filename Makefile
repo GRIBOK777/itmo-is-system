@@ -14,8 +14,8 @@ JAVAP       = javap
 
 JAVACFLAGS = -d $(OUT_DIR) -cp "$(CLASSPATH)" --source-path $(SRC_DIR) --release 25
 JVMFLAGS = -XX:+UseSerialGC -Xmx1500m -Xms1500m
-JAVAFLAGS_SRC = -cp "$(CLASSPATH)" --enable-preview $(JVMFLAGS)
-JAVAFLAGS_TEST = -cp "$(CLASSPATH)" -ea --enable-preview
+JAVAFLAGS_SRC = -cp "$(CLASSPATH)" --enable-preview $(JVMFLAGS) --enable-native-access=ALL-UNNAMED
+JAVAFLAGS_TEST = -cp "$(CLASSPATH)" -ea --enable-preview --enable-native-access=ALL-UNNAMED
 JAVAPFLAGS = -p -s -l -v -c
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
