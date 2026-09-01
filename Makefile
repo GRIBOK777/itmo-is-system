@@ -15,9 +15,9 @@ JAVAP       = javap
 
 JAVACFLAGS = --release 25
 JVMFLAGS = -XX:+UseSerialGC -Xmx1500m -Xms1500m
-NATIVE_ACCESS_MODULES = org.gribok777.lab.database
+NATIVE_ACCESS_MODULES = org.GRIBOK777j.lab.database
 JAVAFLAGS_SRC = --module-path $(OUT_DIR) --enable-preview $(JVMFLAGS) --enable-native-access=$(NATIVE_ACCESS_MODULES)
-JAVAFLAGS_TEST = --module-path $(OUT_DIR) --class-path "$(TEST_OUT):$(CLASSPATH)" --add-modules org.gribok777.lab.logger,$(NATIVE_ACCESS_MODULES) -ea --enable-preview --enable-native-access=$(NATIVE_ACCESS_MODULES)
+JAVAFLAGS_TEST = --module-path $(OUT_DIR) --class-path "$(TEST_OUT):$(CLASSPATH)" --add-modules org.GRIBOK777j.lab.logger,$(NATIVE_ACCESS_MODULES) -ea --enable-preview --enable-native-access=$(NATIVE_ACCESS_MODULES)
 JAVAPFLAGS = -p -s -l -v -c
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
@@ -31,8 +31,8 @@ FILES_SRC = $(shell find $(SRC_DIR) -name "*.java")
 MODULE_DESCRIPTORS = $(shell find $(SRC_DIR) -name "module-info.java")
 FILES_TEST = $(shell find $(TEST_DIR) -name "*.java")
 
-MAINCLASS_SRC = org.gribok777.lab.launcher.Launcher
-MAINCLASS_TEST = org.gribok777.lab.test.MainTest
+MAINCLASS_SRC = org.GRIBOK777j.lab.launcher.Launcher
+MAINCLASS_TEST = org.GRIBOK777j.lab.test.MainTest
 
 
 all: build
@@ -43,14 +43,14 @@ build: deps $(BUILD_SENTINEL)
 $(BUILD_SENTINEL): $(FILES_SRC) $(FILES_TEST) Makefile
 	mkdir -p $(OUT_DIR) $(TEST_OUT)
 	$(JAVAC) $(JAVACFLAGS) --module-source-path "$(SRC_DIR)/*" -d $(OUT_DIR) $(FILES_SRC)
-	$(JAVAC) $(JAVACFLAGS) -d $(TEST_OUT) --module-path $(OUT_DIR) --add-modules org.gribok777.lab.logger $(FILES_TEST)
+	$(JAVAC) $(JAVACFLAGS) -d $(TEST_OUT) --module-path $(OUT_DIR) --add-modules org.GRIBOK777j.lab.logger $(FILES_TEST)
 	touch $(BUILD_SENTINEL)
 
 test: build
 	$(JAVA) $(JAVAFLAGS_TEST) $(MAINCLASS_TEST)
 
 run: build
-	$(JAVA) $(JAVAFLAGS_SRC) -m org.gribok777.lab.launcher/$(MAINCLASS_SRC)
+	$(JAVA) $(JAVAFLAGS_SRC) -m org.GRIBOK777j.lab.launcher/$(MAINCLASS_SRC)
 
 clean:
 	rm -rf $(OUT_DIR)
