@@ -7,6 +7,7 @@ public final class MainTest {
     }
 
     public static void run() {
-        System.out.println(MainTest.class.getSimpleName() + " passed all tests.");
+        org.gribok777.lab.LoggerTest.run();
+        System.out.println("[OK] " + MainTest.class.getSimpleName() + " passed all tests.");
     }
 }
